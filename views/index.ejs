@@ -27,6 +27,9 @@
             padding: 10px;
             margin: 0;
         }
+        .name {
+            font-weight: 800;
+        }
     </style>
   </head>
   <body>
@@ -41,9 +44,14 @@
     <script>
          let yourName = "";
     while(yourName == "" || yourName == null) {
-        yourName = prompt("Enter your name!", "")
-     }
+       yourName = prompt("Enter your name!", "")
+    }
       var socket = io();
+      socket.on("connect", () => {
+        socket.emit("emitToUser", " is connected", yourName)
+        socket.emit("pushUserToArray", yourName)
+        console.log("asd")
+});
       var messages = document.getElementById('messages');
       var form = document.getElementById('form');
       var input = document.getElementById('input');
@@ -63,19 +71,22 @@
       
       socket.on('chat message', function(msg, yourName) {
         var item = document.createElement('li');
-        item.textContent =  yourName + ": " + msg;
+        var name = document.createElement('b');
+        name.textContent = yourName
+        name.classList.add('name')
+        item.textContent =  ": " + msg;
+        item.prepend(name)
         messages.appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
       });
-      socket.on('emitToUser', (arg) => {
+      socket.on('emitToUser', (text, yourName) => {
         var item = document.createElement('li');
-        item.textContent = arg;
+        item.textContent = yourName + text;
         messages.appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
       })
       socket.on('userIsTyping', (bool) => {
         const element = $('.typingElement')
-        console.log(bool);
         if(bool && element.length === 0) {
             $('#typingWrapper').append(" <p class='typingElement'>A user is typing</p>")
         }

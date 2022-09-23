@@ -17,13 +17,29 @@ app.set('view engine', 'ejs')
 app.get('/', (req, res) => {
     res.render(__dirname + "/views/index.ejs")
 })
-
+var users = []
 io.on('connection', (socket) => {
-    socket.broadcast.emit("emitToUser", "user connected")
     console.log('user has connected');
+    socket.on('pushUserToArray', (Name) => {
+        users.forEach(element => {
+           let temp = element.id
+           newId = temp + 1
+        });
+        newUser = {
+            id: socket.id,
+            yourName: Name
+        }
+        users.push(newUser)
+        console.log(users)
+    })
     socket.on('disconnect', () => {
-        socket.broadcast.emit("emitToUser", "user disconnected")
         console.log("user disconnected");
+        const indexOfObject = users.findIndex(object => {
+            return object.id === socket.id;
+          });
+          io.emit("emitToUser", " is disconnected", users[indexOfObject].yourName)
+          users.splice(indexOfObject, 1);
+        
     })
     socket.on('chat message', (msg, yourName) => {
         console.log('message: ' + msg);
@@ -31,6 +47,9 @@ io.on('connection', (socket) => {
       });
       socket.on('userIsTyping', (bool) => {
         socket.broadcast.emit('userIsTyping', bool)
+      });
+      socket.on('emitToUser', (text, yourName) => {
+        io.emit('emitToUser', text, yourName)
       });
 })
 
