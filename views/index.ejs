@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Socket.IO chat</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Socket.IO chat</title>
     <style>
+      * {
+        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+      }
       body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
-      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 5vh; box-sizing: border-box; backdrop-filter: blur(10px); }
       #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
       #input:focus { outline: none; }
       #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
 
       #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages > li { padding: 0.5rem 1rem; }
+      #messages > li { padding: 0.5rem 1rem; box-sizing: border-box; }
       #messages > li:nth-child(odd) { background: #efefef; }
         #typingWrapper {
             display: flex;
@@ -28,31 +33,109 @@
             margin: 0;
         }
         .name {
-            font-weight: 800;
+            font-weight: 600;
         }
+        .date {
+          margin: 0;
+          float: right;
+          opacity: 0.5;
+        }
+        #container {
+          display: flex;
+        }
+        #messageContainer {
+          width: 70%;
+        }
+        #onlineList {
+          width: 30%;
+          min-height: 95vh;
+          position: fixed;
+          right: 0;
+          background-color: #D9D9D9;
+        }
+        h2 {
+          margin: 20px;
+          text-align: center;
+        }
+        #userList {
+          list-style: none;
+          padding: 10px;
+        }
+        #userList li {
+          padding: 10px;
+        }
+        @media only screen and (max-width: 767px) {
+          #container {
+            flex-direction: column;
+          }
+          #messageContainer {
+            width: 100%;
+            max-height: 55vh;
+            min-height: initial;
+            height: 55vh;
+            overflow: scroll;
+            order: 1;
+          }
+          #onlineList {
+            width: 100%;
+            position: static;
+            min-height: 35vh;
+            order: 0;
+          }
+          #form {
+            height: 10vh;
+            position: static;
+          }
+          body {
+            padding: 0;
+          }
+          #messages {
+            overflow: scroll;
+          }
+          #input {
+            padding: 20px;
+          }
+          #form > button {
+            padding: 10px;
+          }
+          #messages > li {
+            white-space: normal;
+            float: left;
+            width: 100%;
+            height: auto;
+            word-wrap: break-word;
+            padding: 10px;
+          }
+}
     </style>
   </head>
   <body>
-    <div id="typingWrapper">
-    </div>
-    <ul id="messages"></ul>
-    <form id="form" action="">
-      <input id="input" autocomplete="off" /><button>Send</button>
-    </form>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-    <script>
-         let yourName = "";
+    <div id="container">
+      <div id="messageContainer">
+        <ul id="messages"></ul>
+      </div>
+      <div id="onlineList">
+        <h2>Currently online</h2>
+        <hr style="width: 50%;">
+        <ul id="userList">
+        </ul>
+        <div id="typingWrapper"></div>
+      </div>
+      </div>
+      <form id="form" action="">
+        <input id="input" autocomplete="off" /><button type="submit">Send</button>
+      </form>
+      <script src="/socket.io/socket.io.js"></script>
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+      <script>
+        let yourName = "";
     while(yourName == "" || yourName == null) {
-       yourName = prompt("Enter your name!", "")
+      yourName = prompt("Enter your name!", "")
     }
-      var socket = io();
-      socket.on("connect", () => {
-        socket.emit("emitToUser", " is connected", yourName)
-        socket.emit("pushUserToArray", yourName)
-        console.log("asd")
-});
-      var messages = document.getElementById('messages');
+    var socket = io();
+    socket.emit("pushUserToArray", yourName)
+    socket.emit("emitToUser", " is connected", yourName)
+    var messages = document.getElementById('messages');
       var form = document.getElementById('form');
       var input = document.getElementById('input');
         $('#input').on('keyup', function(e) {
@@ -62,6 +145,7 @@
            socket.emit('userIsTyping', false)
         })
       form.addEventListener('submit', function(e) {
+        socket.emit('userIsTyping', false)
         e.preventDefault();
         if (input.value) {
           socket.emit('chat message', input.value, yourName);
@@ -70,20 +154,33 @@
       });
       
       socket.on('chat message', function(msg, yourName) {
+        const date = new Date();
+          const currentTime = date.toLocaleString([], {
+              hour12: false,
+            })
         var item = document.createElement('li');
+        var content = document.createElement('p');
         var name = document.createElement('b');
+        var time = document.createElement('p');
         name.textContent = yourName
         name.classList.add('name')
-        item.textContent =  ": " + msg;
+        time.classList.add('text-muted', 'date')
+        content.textContent = msg;
+        time.textContent = currentTime;
         item.prepend(name)
+        item.prepend(content)
+        item.prepend(time)
         messages.appendChild(item);
+        item.appendChild(time);
+        item.appendChild(content);
         window.scrollTo(0, document.body.scrollHeight);
       });
       socket.on('emitToUser', (text, yourName) => {
         var item = document.createElement('li');
         item.textContent = yourName + text;
         messages.appendChild(item);
-        window.scrollTo(0, document.body.scrollHeight);
+        var element = document.getElementById('box');
+        element.scrollTop = element.scrollHeight;
       })
       socket.on('userIsTyping', (bool) => {
         const element = $('.typingElement')
@@ -93,6 +190,18 @@
             if(!bool)
             $('.typingElement').remove()
       })
+      socket.on("getUsers", (userArray) =>{
+        $('#userList').empty()
+        console.log(userArray.length)
+        userArray.forEach(element => {
+          var item = document.createElement('li');
+        item.textContent = element.yourName;
+        $('#userList').append(item)
+          })
+        });
+        $('body').bind('beforeunload',function(){
+          socket.emit("disconnect")
+      });
     </script>
   </body>
 </html>

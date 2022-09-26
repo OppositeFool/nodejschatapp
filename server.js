@@ -17,42 +17,48 @@ app.set('view engine', 'ejs')
 app.get('/', (req, res) => {
     res.render(__dirname + "/views/index.ejs")
 })
+
+
 var users = []
 io.on('connection', (socket) => {
-    console.log('user has connected');
-    socket.on('pushUserToArray', (Name) => {
-        users.forEach(element => {
-           let temp = element.id
-           newId = temp + 1
-        });
-        newUser = {
-            id: socket.id,
-            yourName: Name
-        }
-        users.push(newUser)
-        console.log(users)
-    })
-    socket.on('disconnect', () => {
-        console.log("user disconnected");
-        const indexOfObject = users.findIndex(object => {
-            return object.id === socket.id;
-          });
-          io.emit("emitToUser", " is disconnected", users[indexOfObject].yourName)
-          users.splice(indexOfObject, 1);
-        
-    })
-    socket.on('chat message', (msg, yourName) => {
-        console.log('message: ' + msg);
-        io.emit('chat message', msg, yourName)
+ // socket.removeAllListeners('chat message');
+  console.log('user has connected');
+  socket.on('pushUserToArray', (Name) => {
+      users.forEach(element => {
+         if(element.id === socket.id) return
       });
-      socket.on('userIsTyping', (bool) => {
-        socket.broadcast.emit('userIsTyping', bool)
-      });
-      socket.on('emitToUser', (text, yourName) => {
-        io.emit('emitToUser', text, yourName)
-      });
+      newUser = {
+          id: socket.id,
+          yourName: Name
+      }
+      users.push(newUser)
+      io.emit("getUsers", users)
+      console.log(users)
+  })
+  socket.on('disconnect', () => {
+    console.log(users);
+    for (let index = 0; index < users.length; index++) {
+      const element = users[index];
+      if(element.id === socket.id)
+      {
+        users.splice(index, 1);
+        io.emit("getUsers", users)
+        socket.broadcast.emit("emitToUser", " is disconnected", element.yourName)
+        break;
+      }
+    }
+  })
+  socket.on('chat message', (msg, yourName) => {
+      console.log('message: ' + msg);
+      io.emit('chat message', msg, yourName)
+    });
+    socket.on('userIsTyping', (bool) => {
+      socket.broadcast.emit('userIsTyping', bool)
+    });
+    socket.on('emitToUser', (text, yourName) => {
+     socket.broadcast.emit('emitToUser', text, yourName)
+   });
 })
-
 
 
 
